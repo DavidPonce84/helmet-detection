@@ -38,10 +38,15 @@ El modelo exportado se encuentra en formato Keras (`keras_model.h5`) con su arch
   * Panel de estado del modelo (indicador de carga exitosa).
   * Opciones de sesión (botón para resetear métricas).
 
-### RF-02: Modos Duales de Entrada de Imagen
-1. **Modo Cámara Web (`st.camera_input`):**
-   * Permite al operador capturar una foto instantánea del motociclista en el punto de control con un solo clic.
-2. **Modo Subida de Archivo (`st.file_uploader`):**
+### RF-02: Modos Triples de Entrada de Imagen
+1. **Modo Reconocimiento en Vivo (Streaming Continuo WebRTC + OpenCV):**
+   * Transmisión fluida de video en tiempo real desde la cámara web del navegador.
+   * Análisis cuadro a cuadro con submuestreo de alta velocidad (6-8 evaluaciones/segundo).
+   * Superposición gráfica dinámica de banner superior (Verde / Rojo / Ámbar) y marco perimetral directo sobre el video.
+   * Botón para archivar la detección instantánea en la bitácora de la sesión activa.
+2. **Modo Cámara Web Instantánea (`st.camera_input`):**
+   * Permite al operador capturar una foto fija del motociclista en el punto de control con un solo clic.
+3. **Modo Subida de Archivo (`st.file_uploader`):**
    * Permite cargar imágenes existentes (`.jpg`, `.jpeg`, `.png`) para pruebas directivas o auditorías posteriores.
 
 ### RF-03: Semáforo y Alertas Visuales Inmediatas

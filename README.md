@@ -24,8 +24,13 @@ La aplicación se abrirá automáticamente en tu navegador web en `http://localh
 
 ## 📋 Funcionalidades Principales
 
-1. **Captura en Garita:**
-   - Opción **Cámara Web en Vivo**: El operador toma la captura del motociclista directamente desde la interfaz.
+1. **Reconocimiento en Vivo (Tiempo Real):**
+   - Transmisión continua por video streaming (WebRTC).
+   - Superposición semafórica dinámica (Verde/Rojo/Ámbar) y marco perimetral directamente sobre el video.
+   - Botón para congelar y archivar la detección en vivo en el registro histórico.
+
+2. **Captura Estática en Garita:**
+   - Opción **Foto Instantánea**: El operador toma la captura del motociclista directamente desde la interfaz.
    - Opción **Cargar Fotografía**: Permite subir imágenes (`.jpg`, `.png`) para pruebas o auditorías.
 
 2. **Semáforo de Acceso:**
