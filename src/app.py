@@ -255,6 +255,28 @@ with st.sidebar:
     enable_make_webhook = st.toggle("Activar Envío a Make", value=True, help="Envía cada inspección en tiempo real al Webhook de Make para Google Sheets y Telegram.")
     if enable_make_webhook:
         st.caption("🟢 **Conectado:** Enlace oficial de Make activo.")
+        if st.button("🚀 Enviar Notificación de Prueba", use_container_width=True, help="Envía un registro de prueba instantáneo a Make para verificar Google Sheets y Telegram."):
+            test_payload = {
+                "fecha": datetime.now().strftime("%d/%m/%Y"),
+                "hora_minuto": datetime.now().strftime("%H:%M"),
+                "estado": "Con casco",
+                "certeza": "98.5%",
+                "veredicto": "ACCESO PERMITIDO",
+                "mensaje": "Prueba manual de enlace emitida desde el panel de control Nayón hacia Google Sheets y Telegram."
+            }
+            try:
+                req = urllib.request.Request(
+                    DEFAULT_MAKE_WEBHOOK_URL,
+                    data=json.dumps(test_payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=5) as res:
+                    if res.status == 200:
+                        st.success("✅ ¡Prueba enviada a Make! Revisa tu Google Sheet y Telegram.")
+                    else:
+                        st.warning(f"Respuesta inesperada: HTTP {res.status}")
+            except Exception as e:
+                st.error(f"❌ Error al conectar con Make: {e}")
 
     st.markdown("---")
     st.info("💡 **Consejo:** Para reconocimiento en vivo óptimo, asegúrese de que la cámara apunte a la altura de la cabeza del motociclista.")
