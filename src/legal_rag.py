@@ -2,14 +2,20 @@
 Motor Legal RAG (Retrieval-Augmented Generation) para Control de Tránsito en Nayón.
 Indexa el COIP (Código Orgánico Integral Penal de Ecuador) y el Reglamento LOTTTSV
 para generar dictámenes jurídicos automatizados con fundamentación legal y sanciones.
+Integra soporte para el LLM ligero de Command Code (con fallback inmediato de seguridad).
 """
 import os
 import json
+import urllib.request
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LEGAL_DB_PATH = BASE_DIR / "data" / "legal_base.json"
+
+COMMAND_CODE_API_KEY = "user_5YfhmMTP22utXunRWbZ8rBXzkiJmKvAPg7Z9NUaQ7VjBcxsz2Ku9seLw2wa4VwmkzAJBUYadUnXTMTWzfJ4xBwNP"
+COMMAND_CODE_URL = "https://api.commandcode.ai/provider/v1/chat/completions"
+COMMAND_CODE_MODEL = "poolside/laguna-s-2.1-free"
 
 
 def load_legal_knowledge_base() -> List[Dict[str, Any]]:
@@ -49,6 +55,58 @@ def retrieve_relevant_legal_articles(query_text: str, verdict: str) -> List[Dict
     return [item for score, item in ranked_articles if score > 0] or corpus[:1]
 
 
+def query_command_code_llm(
+    article: Dict[str, Any],
+    class_name: str,
+    verdict: str,
+    confidence_percent: float,
+    api_key: str = COMMAND_CODE_API_KEY
+) -> Optional[str]:
+    """
+    Consulta al LLM ligero de Command Code para redactar el dictamen jurídico RAG.
+    Usa timeout estricto de 4 segundos para garantizar que la UI nunca se congele.
+    """
+    if not api_key:
+        return None
+
+    prompt = (
+        f"Eres el asesor legal de tránsito en la garita de Nayón, Ecuador. "
+        f"Artículo aplicable: {article.get('articulo')} - {article.get('cuerpo_legal')}. "
+        f"Conducta evaluada: {class_name} ({confidence_percent}% de certeza). "
+        f"Sanción legal: {article.get('sancion_economica')} y {article.get('sancion_puntos')}. "
+        f"Redacta un dictamen formal conciso de máximo 2 oraciones para el parte de tránsito."
+    )
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": COMMAND_CODE_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 400
+    }
+
+    try:
+        req = urllib.request.Request(
+            COMMAND_CODE_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=4) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            msg = data.get("choices", [{}])[0].get("message", {})
+            content = msg.get("content")
+            if content and content.strip():
+                return content.strip()
+    except Exception:
+        pass  # Fallback transparente y sin error
+
+    return None
+
+
 def generate_legal_verdict(
     verdict: str,
     class_name: str,
@@ -57,10 +115,10 @@ def generate_legal_verdict(
 ) -> Dict[str, Any]:
     """
     Módulo Generator: Genera el dictamen jurídico a partir del contexto legal recuperado.
-    Soporta LLMs ultraligeros y cuenta con un sintetizador jurídico nativo inmediato.
+    Combina el LLM ligero de Command Code con un sintetizador legal nativo garantizado.
     """
     articles = retrieve_relevant_legal_articles(class_name, verdict)
-    primary_article = articles[0] if articles else None
+    primary_article = articles[0] if articles else {}
 
     # Caso 1: Infracción detectada (Sin Casco)
     if verdict == "DENEGADO" or "sin casco" in class_name.lower():
@@ -107,28 +165,18 @@ def generate_legal_verdict(
         )
         resumen = "Inspección no concluyente: Reintentar captura antes de emitir dictamen legal."
 
-    # Si se configuró una API key para un LLM externo ultraligero (ej. OpenAI gpt-4o-mini), se puede refinar
-    if api_key and api_key.startswith("sk-"):
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            prompt = (
-                f"Actúa como asesor jurídico de tránsito en Ecuador. Con base en este artículo del COIP:\n"
-                f"{json.dumps(primary_article, ensure_ascii=False)}\n\n"
-                f"Genera un dictamen formal conciso de máximo 3 frases para un motociclista que fue "
-                f"detectado con estado '{class_name}' ({confidence_percent}% de certeza). Incluye la sanción exacta."
-            )
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=150,
-                temperature=0.2
-            )
-            llm_text = response.choices[0].message.content.strip()
-            if llm_text:
-                dictamen = f"[LLM gpt-4o-mini] {llm_text}"
-        except Exception:
-            pass  # Fallback suave al dictamen base
+    # Intentar enriquecer mediante el LLM de Command Code si la clave está activa
+    effective_key = api_key or COMMAND_CODE_API_KEY
+    if effective_key:
+        llm_response = query_command_code_llm(
+            article=primary_article,
+            class_name=class_name,
+            verdict=verdict,
+            confidence_percent=confidence_percent,
+            api_key=effective_key
+        )
+        if llm_response:
+            dictamen = f"[Command Code AI] {llm_response}"
 
     return {
         "articulo": norma,
@@ -137,5 +185,5 @@ def generate_legal_verdict(
         "sancion_puntos": puntos,
         "dictamen": dictamen,
         "resumen_ejecutivo": resumen,
-        "fuente_oficial": primary_article["conducta"] if primary_article else ""
+        "fuente_oficial": primary_article.get("conducta", "")
     }

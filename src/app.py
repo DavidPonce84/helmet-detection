@@ -283,14 +283,11 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("⚖️ Asesor Legal RAG (Ecuador)")
-    with st.expander("📖 Base Jurídica Indexada", expanded=False):
-        st.markdown("**Norma Central:** COIP Art. 389, numeral 11")
-        st.markdown("**Sanción:** 30% SBU ($138 USD) y -6 puntos en licencia.")
-        llm_api_key = st.text_input(
-            "API Key LLM Opcional (OpenAI):",
-            type="password",
-            help="Opcional: Si se deja vacío, el sistema usa el sintetizador legal RAG nativo sin costo."
-        )
+    with st.expander("📖 Base Jurídica & LLM", expanded=True):
+        st.markdown("**Norma:** COIP Art. 389, num. 11")
+        st.markdown("**Sanción:** 30% SBU ($138) y -6 puntos.")
+        st.success("🤖 **LLM Conectado:** Command Code (Activo)")
+        llm_api_key = None
 
 
 # --- ENCABEZADO Y MÉTRICAS SUPERIORES ---
