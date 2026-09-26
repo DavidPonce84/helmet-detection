@@ -17,7 +17,27 @@ from streamlit_webrtc import (
     RTCConfiguration,
 )
 
+import urllib.request
+import json
+import threading
+
 from model_service import load_prediction_model, load_labels, predict_helmet
+
+DEFAULT_MAKE_WEBHOOK_URL = "https://hook.us1.make.com/wjuvrfeufsdem77y7kxnongs96u4kx93"
+
+def notify_make_webhook(webhook_url: str, payload: dict):
+    """Envía el reporte de inspección de forma asíncrona a Make sin ralentizar la interfaz."""
+    def _send():
+        try:
+            req = urllib.request.Request(
+                webhook_url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+    threading.Thread(target=_send, daemon=True).start()
 
 # Configuración de página de Streamlit
 st.set_page_config(
@@ -219,7 +239,6 @@ with st.sidebar:
     else:
         st.error(f"❌ Error al cargar modelo: {model_error}")
 
-    st.markdown("---")
     if st.button("🔄 Reiniciar Métricas de Sesión", use_container_width=True):
         st.session_state.total_inspections = 0
         st.session_state.approved_count = 0
@@ -230,6 +249,12 @@ with st.sidebar:
         st.session_state.last_result = None
         st.session_state.last_image = None
         st.rerun()
+
+    st.markdown("---")
+    st.subheader("📲 Notificaciones (Make / Telegram)")
+    enable_make_webhook = st.toggle("Activar Envío a Make", value=True, help="Envía cada inspección en tiempo real al Webhook de Make para Google Sheets y Telegram.")
+    if enable_make_webhook:
+        st.caption("🟢 **Conectado:** Enlace oficial de Make activo.")
 
     st.markdown("---")
     st.info("💡 **Consejo:** Para reconocimiento en vivo óptimo, asegúrese de que la cámara apunte a la altura de la cabeza del motociclista.")
@@ -307,7 +332,16 @@ with col_left:
                         "Certeza": f"{current['confidence_percent']}%",
                         "Clase": current["class_name"]
                     })
-                    st.success("✅ Detección en vivo archivada en la bitácora de sesión.")
+                    if enable_make_webhook:
+                        notify_make_webhook(DEFAULT_MAKE_WEBHOOK_URL, {
+                            "fecha": datetime.now().strftime("%d/%m/%Y"),
+                            "hora_minuto": datetime.now().strftime("%H:%M"),
+                            "estado": current["class_name"],
+                            "certeza": f"{current['confidence_percent']}%",
+                            "veredicto": current["verdict"],
+                            "mensaje": current["message"]
+                        })
+                    st.success("✅ Detección en vivo archivada y enviada a Make.")
                     time.sleep(0.5)
                     st.rerun()
 
@@ -363,6 +397,15 @@ if image_to_evaluate is not None and model_ready:
             "Certeza": f"{result['confidence_percent']}%",
             "Clase": result["class_name"]
         })
+        if enable_make_webhook:
+            notify_make_webhook(DEFAULT_MAKE_WEBHOOK_URL, {
+                "fecha": datetime.now().strftime("%d/%m/%Y"),
+                "hora_minuto": datetime.now().strftime("%H:%M"),
+                "estado": result["class_name"],
+                "certeza": f"{result['confidence_percent']}%",
+                "veredicto": result["verdict"],
+                "mensaje": result["message"]
+            })
         st.session_state.last_processed_id = image_id
         st.session_state.last_result = result
         st.session_state.last_image = image_to_evaluate
