@@ -1,0 +1,24 @@
+[
+  {
+    "id": "COIP-389-11",
+    "cuerpo_legal": "Código Orgánico Integral Penal (COIP)",
+    "articulo": "Artículo 389, numeral 11",
+    "tipo_infraccion": "Contravención de tránsito de cuarta clase",
+    "conducta": "La o el conductor y los acompañantes, en caso de haberlos, de motocicletas, motonetas, bicimotos, tricar y cuadrones que no utilicen adecuadamente casco de seguridad homologados de conformidad con lo establecido en los reglamentos de tránsito o, que en la noche no utilicen prendas visibles retroreflectivas.",
+    "sancion_economica": "Multa equivalente al 30% de un salario básico unificado del trabajador en general (aproximadamente $138 USD).",
+    "sancion_puntos": "Reducción de 6 puntos en su licencia de conducir.",
+    "sujetos_obligados": "Conductor y acompañante de motocicletas, motonetas, bicimotos, tricar y cuadrones.",
+    "palabras_clave": ["sin casco", "casco", "infraccion", "motocicleta", "no usa casco", "denegado"]
+  },
+  {
+    "id": "LOTTTSV-RG-272",
+    "cuerpo_legal": "Reglamento General a la Ley Orgánica de Transporte Terrestre, Tránsito y Seguridad Vial (LOTTTSV)",
+    "articulo": "Artículo 272 y 280",
+    "tipo_infraccion": "Norma regulatoria de seguridad vial",
+    "conducta": "Obligatoriedad de uso de casco protector homologado debidamente abrochado para los conductores y acompañantes de motocicletas y similares, garantizando que el visor o sistema de sujeción se encuentre en óptimas condiciones de funcionamiento.",
+    "sancion_economica": "Sujeto a las sanciones estipuladas en el COIP para contravenciones de tránsito.",
+    "sancion_puntos": "Reducción de puntos según la gravedad estipulada en el COIP.",
+    "sujetos_obligados": "Todo conductor y acompañante en vías públicas del territorio nacional.",
+    "palabras_clave": ["homologado", "con casco", "seguridad vial", "reglamento", "permitido", "normativa"]
+  }
+]

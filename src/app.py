@@ -22,6 +22,7 @@ import json
 import threading
 
 from model_service import load_prediction_model, load_labels, predict_helmet
+from legal_rag import generate_legal_verdict
 
 DEFAULT_MAKE_WEBHOOK_URL = "https://hook.us1.make.com/wjuvrfeufsdem77y7kxnongs96u4kx93"
 
@@ -262,7 +263,9 @@ with st.sidebar:
                 "estado": "Con casco",
                 "certeza": "98.5%",
                 "veredicto": "ACCESO PERMITIDO",
-                "mensaje": "Prueba manual de enlace emitida desde el panel de control Nayón hacia Google Sheets y Telegram."
+                "mensaje": "Conductor en regla: Cumple normativa COIP Art. 389 num. 11. Acceso autorizado.",
+                "base_legal": "COIP Artículo 389, numeral 11",
+                "sancion": "$0 (Cumple normativa de tránsito)"
             }
             try:
                 req = urllib.request.Request(
@@ -279,7 +282,15 @@ with st.sidebar:
                 st.error(f"❌ Error al conectar con Make: {e}")
 
     st.markdown("---")
-    st.info("💡 **Consejo:** Para reconocimiento en vivo óptimo, asegúrese de que la cámara apunte a la altura de la cabeza del motociclista.")
+    st.subheader("⚖️ Asesor Legal RAG (Ecuador)")
+    with st.expander("📖 Base Jurídica Indexada", expanded=False):
+        st.markdown("**Norma Central:** COIP Art. 389, numeral 11")
+        st.markdown("**Sanción:** 30% SBU ($138 USD) y -6 puntos en licencia.")
+        llm_api_key = st.text_input(
+            "API Key LLM Opcional (OpenAI):",
+            type="password",
+            help="Opcional: Si se deja vacío, el sistema usa el sintetizador legal RAG nativo sin costo."
+        )
 
 
 # --- ENCABEZADO Y MÉTRICAS SUPERIORES ---
@@ -354,6 +365,12 @@ with col_left:
                         "Certeza": f"{current['confidence_percent']}%",
                         "Clase": current["class_name"]
                     })
+                    legal_res = generate_legal_verdict(
+                        verdict=current["verdict"],
+                        class_name=current["class_name"],
+                        confidence_percent=current["confidence_percent"],
+                        api_key=llm_api_key
+                    )
                     if enable_make_webhook:
                         notify_make_webhook(DEFAULT_MAKE_WEBHOOK_URL, {
                             "fecha": datetime.now().strftime("%d/%m/%Y"),
@@ -361,7 +378,9 @@ with col_left:
                             "estado": current["class_name"],
                             "certeza": f"{current['confidence_percent']}%",
                             "veredicto": current["verdict"],
-                            "mensaje": current["message"]
+                            "mensaje": legal_res["resumen_ejecutivo"],
+                            "base_legal": legal_res["articulo"],
+                            "sancion": f"{legal_res['sancion_multa']} | {legal_res['sancion_puntos']}"
                         })
                     st.success("✅ Detección en vivo archivada y enviada a Make.")
                     time.sleep(0.5)
@@ -419,6 +438,12 @@ if image_to_evaluate is not None and model_ready:
             "Certeza": f"{result['confidence_percent']}%",
             "Clase": result["class_name"]
         })
+        legal_res = generate_legal_verdict(
+            verdict=result["verdict"],
+            class_name=result["class_name"],
+            confidence_percent=result["confidence_percent"],
+            api_key=llm_api_key
+        )
         if enable_make_webhook:
             notify_make_webhook(DEFAULT_MAKE_WEBHOOK_URL, {
                 "fecha": datetime.now().strftime("%d/%m/%Y"),
@@ -426,7 +451,9 @@ if image_to_evaluate is not None and model_ready:
                 "estado": result["class_name"],
                 "certeza": f"{result['confidence_percent']}%",
                 "veredicto": result["verdict"],
-                "mensaje": result["message"]
+                "mensaje": legal_res["resumen_ejecutivo"],
+                "base_legal": legal_res["articulo"],
+                "sancion": f"{legal_res['sancion_multa']} | {legal_res['sancion_puntos']}"
             })
         st.session_state.last_processed_id = image_id
         st.session_state.last_result = result
@@ -477,6 +504,22 @@ with col_right:
         st.markdown("##### Probabilidades por Clase:")
         for label, prob in current_result["probabilities"].items():
             st.write(f"• **{label}:** `{prob*100:.1f}%`")
+
+        # Fundamentación Jurídica RAG basada en COIP y LOTTTSV
+        legal_info = generate_legal_verdict(
+            verdict=verdict,
+            class_name=current_result["class_name"],
+            confidence_percent=confidence,
+            api_key=llm_api_key
+        )
+        with st.expander("⚖️ Fundamentación Legal & Dictamen Jurídico (RAG - COIP)", expanded=True):
+            st.markdown(f"**📜 Norma Aplicable:** `{legal_info['articulo']}`")
+            st.markdown(f"**📋 Calificación:** {legal_info['tipo_infraccion']}")
+            if verdict == "DENEGADO":
+                st.error(f"💰 **Sanción Económica:** {legal_info['sancion_multa']}\n\n🪪 **Sanción en Licencia:** {legal_info['sancion_puntos']}")
+            elif verdict == "PERMITIDO":
+                st.success("✅ **Estado Jurídico:** Conductor en regla. No procede sanción económica ni deducción de puntos.")
+            st.info(f"🏛️ **Dictamen Legal Automatizado:**\n\n{legal_info['dictamen']}")
 
     else:
         st.info("👈 Seleccione una pestaña a la izquierda: inicie el **Video en Vivo** o capture una foto para emitir el veredicto.")

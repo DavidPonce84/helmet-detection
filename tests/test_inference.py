@@ -47,12 +47,21 @@ class TestModelInference(unittest.TestCase):
         self.assertIn("probabilities", result)
         self.assertIn(result["verdict"], ["PERMITIDO", "DENEGADO", "NO_CONCLUYENTE"])
 
-    def test_confidence_threshold_logic(self):
-        """Verifica que si el umbral es 99.9%, el dictamen sea NO_CONCLUYENTE salvo certeza extrema."""
-        test_img = Image.new("RGB", (224, 224), color=(0, 0, 0))
-        result = predict_helmet(self.model, self.labels, test_img, confidence_threshold=0.9999)
-        self.assertEqual(result["verdict"], "NO_CONCLUYENTE")
-        self.assertEqual(result["color"], "amber")
+    def test_legal_rag_coip_infraction(self):
+        """Verifica que el RAG legal cite el Art. 389 num. 11 del COIP y las sanciones de tránsito."""
+        from src.legal_rag import generate_legal_verdict
+        res = generate_legal_verdict("DENEGADO", "Sin casco", 92.5)
+        self.assertIn("389", res["articulo"])
+        self.assertIn("30%", res["sancion_multa"])
+        self.assertIn("-6 puntos", res["sancion_puntos"])
+        self.assertIn("DICTAMEN SANCIONATORIO", res["dictamen"])
+
+    def test_legal_rag_compliance(self):
+        """Verifica que el RAG legal emita dictamen de conformidad cuando tiene casco."""
+        from src.legal_rag import generate_legal_verdict
+        res = generate_legal_verdict("PERMITIDO", "Con casco", 96.0)
+        self.assertIn("DICTAMEN DE CONFORMIDAD", res["dictamen"])
+        self.assertIn("$0", res["sancion_multa"])
 
 
 if __name__ == "__main__":

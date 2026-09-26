@@ -78,6 +78,15 @@ El sistema mantiene el estado de la sesión activa (`st.session_state`) sin requ
      - `Confianza` (ej. 92.4%)
      - `Modo` (Cámara / Archivo)
 
+### RF-06: Asesor Legal RAG (Ecuador - COIP y LOTTTSV)
+* **Base de Conocimiento Indexada:** COIP Artículo 389 numeral 11 y Reglamento General a la LOTTTSV Art. 272/280.
+* **Módulo Retrieval:** Recupera automáticamente la fundamentación jurídica según el resultado de la inspección.
+* **Módulo Generator (LLM Ultraligero / Sintetizador):** Redacta dictámenes jurídicos automatizados para el parte de tránsito.
+* **Cálculo de Sanciones:**
+  - Multa económica: 30% del Salario Básico Unificado (~$138 USD).
+  - Deducción de puntos: -6 puntos en la licencia de conducir.
+* **Integración Omnicanal:** Inclusión de la base legal y sanción en la UI de Streamlit, en las filas de Google Sheets y en las alertas de Telegram.
+
 ---
 
 ## 4. ⚡ Requerimientos No Funcionales
